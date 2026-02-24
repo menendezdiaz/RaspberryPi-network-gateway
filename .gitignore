@@ -1,0 +1,44 @@
+# --- OS / editor ---
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# macOS resource forks (los "._" que vienen en tu zip)
+._*
+**/._*
+
+# --- Python ---
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+.env
+
+# --- Logs / runtime ---
+logs/
+**/logs/
+*.log
+
+# --- Local data / SQLite ---
+data/
+**/data/
+*.db
+*.sqlite
+*.sqlite3
+*.db-wal
+*.db-shm
+
+# --- Secrets / local configs ---
+ts_gateway/nodes.json
+ts_gateway/nodes.local.json
+ts_gateway/*secret*
+ts_gateway/*.key
+ts_gateway/*.pem
+
+# (si en el futuro metes credentials en otros json/yaml)
+**/*local*.json
+**/*local*.yaml
+**/*local*.yml

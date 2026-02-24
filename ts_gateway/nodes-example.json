@@ -1,0 +1,26 @@
+{
+  "teide01": {
+    "table": "readings_teide01",
+    "db_columns": ["temperature", "humidity", "pressure"],
+    "thingspeak": {
+      "write_key": "YOUR_THINGSPEAK_API_KEY",
+      "fields": {"field1": "temperature", "field2": "humidity", "field3": "pressure"}
+    }
+  },
+  "teide02": {
+    "table": "readings_teide02",
+    "db_columns": ["humidity", "temperature"],
+    "thingspeak": {
+      "write_key": "YOUR_THINGSPEAK_API_KEY",
+      "fields": {"field1": "humidity", "field2": "temperature"}
+    }
+  },
+  "Cueva_Teide": {
+    "table": "readings_Cueva_Teide",
+    "db_columns": ["incli_x", "incli_y", "temperature"],
+    "thingspeak": {
+      "write_key": "YOUR_THINGSPEAK_API_KEY",
+      "fields": {"field1": "incli_x", "field2": "incli_y", "field3": "temperature"}
+    }
+  }
+}
