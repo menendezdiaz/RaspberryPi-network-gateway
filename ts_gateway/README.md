@@ -220,9 +220,44 @@ When internet returns:
 
 ------------------------------------------------------------------------
 
-# 8. Replicating the Gateway
+# 8. Data Visualization
 
-## 8.1 Requirements
+The `view_gateway_db.py` script generates visual graphs of your stored sensor data:
+
+-   Automatically detects all tables and numeric columns in `gateway.db`
+-   Generates time-series plots for each sensor node
+-   Saves PNG images to `data/exports/`
+-   Works over SSH without GUI or X11 (headless-friendly)
+-   Supports multiple time formats (ISO8601, Unix epoch)
+
+### Usage
+
+```bash
+python3 data/view_gateway_db.py
+```
+
+The script will:
+
+1.  Scan the gateway database
+2.  Create graphs for each table
+3.  Save PNG files in `data/exports/` with timestamp
+
+Example output:
+-   `data/exports/20260303_readings_teide02_7_days.png`
+-   `data/exports/20260303_readings_Cueva_Teide_1_days.csv`
+
+This is useful for:
+
+-   Verifying data quality
+-   Inspecting trends remotely
+-   Debugging sensor issues
+-   Generating reports
+
+------------------------------------------------------------------------
+
+# 9. Replicating the Gateway
+
+## 9.1 Requirements
 
 -   Raspberry Pi (Pi 2 or newer recommended)
 -   Python 3.9+
@@ -233,7 +268,7 @@ When internet returns:
 
 ------------------------------------------------------------------------
 
-## 8.2 Installation
+## 9.2 Installation
 
 Clone repository:
 
@@ -269,7 +304,7 @@ sudo systemctl start ts_uploader
 
 ------------------------------------------------------------------------
 
-# 9. Data Flow Summary
+# 10. Data Flow Summary
 
   Step   Component     Action
   ------ ------------- --------------------------------
@@ -281,7 +316,7 @@ sudo systemctl start ts_uploader
 
 ------------------------------------------------------------------------
 
-# 10. Design Philosophy
+# 11. Design Philosophy
 
 -   Minimal dependencies
 -   Fully local persistence
@@ -293,7 +328,7 @@ sudo systemctl start ts_uploader
 
 ------------------------------------------------------------------------
 
-# 11. Maintenance Tips
+# 12. Maintenance Tips
 
 -   Periodically backup `gateway.db`
 -   Monitor disk usage
@@ -302,7 +337,7 @@ sudo systemctl start ts_uploader
 
 ------------------------------------------------------------------------
 
-# 12. Summary
+# 13. Summary
 
 `ts_gateway` is a robust, fault-tolerant Raspberry Pi data gateway that:
 

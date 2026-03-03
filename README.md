@@ -70,6 +70,40 @@ See `ts_gateway/README.md` for systemd service setup and operation.
 
 ------------------------------------------------------------------------
 
+## Remote Access (Tailscale)
+
+The Raspberry Pi gateway can be accessed remotely via Tailscale:
+
+### SSH Connection
+
+```bash
+ssh pi@<TAILSCALE_IP>
+```
+
+Once connected via SSH, you can:
+
+-   Monitor services: `sudo systemctl status ts_receiver`
+-   View data: `python3 ~/ts_gateway/data/view_gateway_db.py`
+-   Download exports: `scp -r pi@<TAILSCALE_IP>:/home/pi/ts_gateway/data/exports ./`
+
+### VS Code Remote Access
+
+Using the "Remote - SSH" extension:
+
+1.  Install the extension from VS Code Marketplace
+2.  Click **>< (Remote)** in the bottom-left corner
+3.  Select "Connect to Host..."
+4.  Enter `ssh pi@<TAILSCALE_IP>`
+5.  Open `/home/pi/ts_gateway` and browse files directly
+
+This allows you to:
+
+-   View logs and data files
+-   Download CSV exports and graphs
+-   Monitor the gateway from any location
+
+------------------------------------------------------------------------
+
 ## Sensor nodes
 
 Firmware examples are in `sensor_node/`.\
