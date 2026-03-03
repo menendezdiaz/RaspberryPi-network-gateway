@@ -23,7 +23,9 @@ logs/
 *.log
 
 # --- Local data / SQLite ---
+# ignore everything under data/ except the gateway view script
 data/
+!data/view_gateway_db.py
 **/data/
 *.db
 *.sqlite
