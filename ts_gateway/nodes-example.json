@@ -2,25 +2,84 @@
   "teide01": {
     "table": "readings_teide01",
     "db_columns": ["temperature", "humidity", "pressure"],
+    "input": {
+      "format": "kv",
+      "match": {
+        "contains": "node=",
+        "node_key": "node",
+        "node_value": "teide01"
+      },
+      "field_map": {
+        "temp": "temperature",
+        "hum": "humidity",
+        "pres": "pressure"
+      }
+    },
     "thingspeak": {
-      "write_key": "YOUR_THINGSPEAK_API_KEY",
-      "fields": {"field1": "temperature", "field2": "humidity", "field3": "pressure"}
+      "write_key": "YOUR_API_KEY",
+      "fields": {
+        "field1": "temperature",
+        "field2": "humidity",
+        "field3": "pressure"
+      }
     }
   },
+
+
+  
+
   "teide02": {
     "table": "readings_teide02",
     "db_columns": ["humidity", "temperature"],
+    "input": {
+      "format": "csv",
+      "match": {
+        "prefix": "TEST,"
+      },
+      "csv": {
+        "expected_len": 3,
+        "fields": {
+          "1": "humidity",
+          "2": "temperature"
+        }
+      }
+    },
     "thingspeak": {
-      "write_key": "YOUR_THINGSPEAK_API_KEY",
-      "fields": {"field1": "humidity", "field2": "temperature"}
+      "write_key": "YOUR_API_KEY",
+      "fields": {
+        "field1": "humidity",
+        "field2": "temperature"
+      }
     }
   },
+
+
+
+
   "Cueva_Teide": {
     "table": "readings_Cueva_Teide",
     "db_columns": ["incli_x", "incli_y", "temperature"],
+    "input": {
+      "format": "csv",
+      "match": {
+        "prefix": "DATA,"
+      },
+      "csv": {
+        "expected_len": 4,
+        "fields": {
+          "1": "incli_x",
+          "2": "incli_y",
+          "3": "temperature"
+        }
+      }
+    },
     "thingspeak": {
-      "write_key": "YOUR_THINGSPEAK_API_KEY",
-      "fields": {"field1": "incli_x", "field2": "incli_y", "field3": "temperature"}
+      "write_key": "YOUR_API_KEY",
+      "fields": {
+        "field1": "incli_x",
+        "field2": "incli_y",
+        "field3": "temperature"
+      }
     }
   }
 }

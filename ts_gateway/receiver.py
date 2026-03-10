@@ -53,78 +53,134 @@ def insert_dynamic(table: str, columns: list[str], values: list[float]):
         con.close()
 
 
+
+
+
+
+
+
+
+
+
 # -------------------------
 # Parsing / routing
 # -------------------------
 
-def parse_kv_legacy(line: str):
-    """node=<id>,temp=...,hum=...,pres=..."""
+def parse_kv_line(line: str):
     parts = [p.strip() for p in line.split(",") if p and p.strip()]
     kv = {}
     for p in parts:
         if "=" not in p:
             continue
         k, v = p.split("=", 1)
-        kv[k.strip().lower()] = v.strip()
-
-    node_id = kv.get("node")
-    temp = kv.get("temp")
-    hum = kv.get("hum")
-    pres = kv.get("pres")
-
-    if node_id is None or temp is None or hum is None or pres is None:
-        raise ValueError("Faltan campos (node/temp/hum/pres)")
-
-    return node_id, {"temperature": float(temp), "humidity": float(hum), "pressure": float(pres)}
+        kv[k.strip()] = v.strip()
+    return kv
 
 
-def route_and_parse(line: str):
-    """
-    Routing por prefijo (según tu decisión):
-      - Teide02:  "TEST,hum,temp"
-      - Cueva_Teide: "DATA,incliX,incliY,temp"
 
-    Compatibilidad extra:
-      - Legacy: "node=teide01,temp=...,hum=...,pres=..."
+def parse_by_node_config(line: str, node_id: str, node_cfg: dict):
+    input_cfg = node_cfg.get("input", {})
+    fmt = input_cfg.get("format")
+    match_cfg = input_cfg.get("match", {})
 
-    Devuelve: (node_id, dict{col: value})
-    """
+    # -------------------------
+    # KV format
+    # Ejemplo: node=teide01,temp=23,hum=50,pres=900
+    # -------------------------
+    if fmt == "kv":
+        contains = match_cfg.get("contains")
+        node_key = match_cfg.get("node_key")
+        node_value = match_cfg.get("node_value")
+
+        if contains and contains not in line:
+            return None
+
+        kv = parse_kv_line(line)
+
+        if node_key and kv.get(node_key) != node_value:
+            return None
+
+        field_map = input_cfg.get("field_map", {})
+        values_dict = {}
+
+        for raw_key, db_col in field_map.items():
+            if raw_key not in kv:
+                raise ValueError(f"Falta campo '{raw_key}' en mensaje KV de {node_id}")
+            values_dict[db_col] = float(kv[raw_key])
+
+        return node_id, values_dict
+
+    # -------------------------
+    # CSV format
+    # Ejemplo: TEST,hum,temp  o  DATA,x,y,temp
+    # -------------------------
+    if fmt == "csv":
+        prefix = match_cfg.get("prefix")
+        if prefix and not line.startswith(prefix):
+            return None
+
+        parts = [p.strip() for p in line.split(",")]
+        csv_cfg = input_cfg.get("csv", {})
+        expected_len = csv_cfg.get("expected_len")
+        field_positions = csv_cfg.get("fields", {})
+
+        if expected_len is not None and len(parts) != expected_len:
+            raise ValueError(
+                f"{node_id}: se esperaban {expected_len} elementos y llegaron {len(parts)}"
+            )
+
+        values_dict = {}
+        for pos_str, db_col in field_positions.items():
+            pos = int(pos_str)
+            if pos >= len(parts):
+                raise ValueError(f"{node_id}: posición {pos} fuera de rango")
+            values_dict[db_col] = float(parts[pos])
+
+        return node_id, values_dict
+
+    raise ValueError(f"Nodo '{node_id}' con formato no soportado: {fmt}")
+
+
+
+def route_and_parse(line: str, nodes_cfg: dict):
     line = line.strip()
     if not line:
         raise ValueError("Línea vacía")
 
-    # Teide02
-    if line.startswith("TEST,"):
-        parts = [p.strip() for p in line.split(",")]
-        if len(parts) != 3:
-            raise ValueError("TEST requiere 2 valores: TEST,hum,temp")
-        hum = float(parts[1])
-        temp = float(parts[2])
-        return "teide02", {"humidity": hum, "temperature": temp}
+    parse_errors = []
 
-    # Cueva_Teide
-    if line.startswith("DATA,"):
-        parts = [p.strip() for p in line.split(",")]
-        if len(parts) != 4:
-            raise ValueError("DATA requiere 3 valores: DATA,incliX,incliY,temp")
-        incli_x = float(parts[1])
-        incli_y = float(parts[2])
-        temp = float(parts[3])
-        return "Cueva_Teide", {"incli_x": incli_x, "incli_y": incli_y, "temperature": temp}
+    for node_id, node_cfg in nodes_cfg.items():
+        try:
+            result = parse_by_node_config(line, node_id, node_cfg)
+            if result is not None:
+                return result
+        except Exception as e:
+            parse_errors.append(f"{node_id}: {e}")
 
-    # Legacy kv
-    if "node=" in line.lower():
-        return parse_kv_legacy(line)
+    if parse_errors:
+        raise ValueError(
+            "La línea no pudo parsearse con ningún nodo. "
+            + "Errores: " + " | ".join(parse_errors)
+        )
 
-    raise ValueError("Formato no reconocido")
+    raise ValueError("Formato no reconocido por ningún nodo configurado")
+
+
+
+
+
+
+
+
 
 
 # -------------------------
 # Inputs: TCP / Serial
 # -------------------------
 
+
 def process_line(line: str, nodes_cfg: dict):
-    node_id, values_dict = route_and_parse(line)
+    node_id, values_dict = route_and_parse(line, nodes_cfg)
 
     if node_id not in nodes_cfg:
         raise ValueError(f"Nodo '{node_id}' no existe en nodes.json")
@@ -132,7 +188,6 @@ def process_line(line: str, nodes_cfg: dict):
     table = nodes_cfg[node_id]["table"]
     cols = nodes_cfg[node_id]["db_columns"]
 
-    # Ensure all needed columns exist in parsed dict
     values = []
     for c in cols:
         if c not in values_dict:
@@ -141,6 +196,8 @@ def process_line(line: str, nodes_cfg: dict):
 
     insert_dynamic(table, cols, values)
     log(f"RX OK: node={node_id} values={values_dict} raw='{line.strip()}'")
+
+
 
 
 def run_tcp(nodes_cfg: dict, host: str, port: int):
