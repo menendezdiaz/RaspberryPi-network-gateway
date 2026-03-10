@@ -91,32 +91,91 @@ After successful upload:
 
 ## 4.1 nodes.json
 
-This file defines:
+The JSON is fully dynamic and contains two main parsing routes: `kv` (key=value set) and `csv` (position-based values).
 
--   Sensor node name
--   Expected message prefix
--   Database table
--   Data columns
--   ThingSpeak channel mapping
+Each node config contains:
 
-Example:
+- `table`: SQLite table name for this node
+- `db_columns`: ordered list of DB columns to insert (excluding `id`, `ts_utc`, `sent`)
+- `input`: parser config
+  - `format`: `kv` or `csv`
+  - `match`: conditions used to select node (e.g., `contains` for KV, `prefix` for CSV)
+  - `field_map` (for KV): key-name → db column
+  - `csv`: CSV-specific config with:
+    - `expected_len`: exact field count
+    - `fields`: index (as string) → db column
+- `thingspeak`: upload config
+  - `write_key`: channel API key
+  - `fields`: `fieldN` → db column
 
-``` json
+### KV format example
+
+```json
 {
-  "teide02": {
-    "prefix": "TEST",
-    "table": "teide02",
-    "columns": ["hum", "temp"],
+  "teide01": {
+    "table": "readings_teide01",
+    "db_columns": ["temperature", "humidity", "pressure"],
+    "input": {
+      "format": "kv",
+      "match": {
+        "contains": "node=",
+        "node_key": "node",
+        "node_value": "teide01"
+      },
+      "field_map": {
+        "temp": "temperature",
+        "hum": "humidity",
+        "pres": "pressure"
+      }
+    },
     "thingspeak": {
-      "write_key": "XXXX",
+      "write_key": "ESNP7J7HQ5B6NG5L",
       "fields": {
-        "field1": "hum",
-        "field2": "temp"
+        "field1": "temperature",
+        "field2": "humidity",
+        "field3": "pressure"
       }
     }
   }
 }
 ```
+
+Incoming line example: `node=teide01,temp=23.4,hum=37.5,pres=1015`
+
+### CSV format example
+
+```json
+{
+  "teide02": {
+    "table": "readings_teide02",
+    "db_columns": ["humidity", "temperature"],
+    "input": {
+      "format": "csv",
+      "match": {
+        "prefix": "TEST,"
+      },
+      "csv": {
+        "expected_len": 3,
+        "fields": {
+          "1": "humidity",
+          "2": "temperature"
+        }
+      }
+    },
+    "thingspeak": {
+      "write_key": "1ZJZR36RQ8SCIHDP",
+      "fields": {
+        "field1": "humidity",
+        "field2": "temperature"
+      }
+    }
+  }
+}
+```
+
+Incoming line example: `TEST,70.1,23.9`
+
+The receiver runs `route_and_parse()` over every node, matching by `input.format` and `input.match`, converting inputs into a `values_dict` and inserting via `insert_dynamic()` with UTC timestamp.
 
 ------------------------------------------------------------------------
 
