@@ -7,6 +7,9 @@ to run on a Raspberry Pi. It receives sensor data (typically via LoRa),
 stores it locally in SQLite, and uploads it to ThingSpeak with proper
 timestamp handling and automatic backlog recovery.
 
+🚀 **Quick Link:** [Skip to Replication & Installation Guide (#9)](#-9-replicating-the-gateway)
+
+
 ------------------------------------------------------------------------
 
 # 1. Overview
@@ -316,6 +319,11 @@ This is useful for:
 
 
 # 9. Replicating the Gateway
+
+> [!IMPORTANT]
+> **This is the section you need to replicate the gateway from scratch.**
+> It covers all installation steps: dependencies, serial port setup,
+> database initialization, and systemd service configuration.
 
 ## 9.1 Requirements
 
