@@ -1,0 +1,5 @@
+pyserial
+requests
+matplotlib
+pandas
+sqlite3
