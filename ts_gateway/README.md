@@ -314,54 +314,156 @@ This is useful for:
 
 ------------------------------------------------------------------------
 
+
 # 9. Replicating the Gateway
 
 ## 9.1 Requirements
 
--   Raspberry Pi (Pi 2 or newer recommended)
--   Python 3.9+
--   SQLite (default)
--   Internet connection
--   ThingSpeak account
--   LoRa module connected to serial
+- Raspberry Pi (Pi 2 or newer recommended)
+- Python 3.9+
+- SQLite (included in Python standard library)
+- Internet connection
+- ThingSpeak account
+- LoRa module connected to serial
 
-------------------------------------------------------------------------
+---
 
 ## 9.2 Installation
 
-Clone repository:
+### Clone the repository
 
-``` bash
+```bash
 git clone <repo>
 cd ts_gateway
 ```
 
-Create virtual environment:
+### Create virtual environment and install dependencies
 
-``` bash
+```bash
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Initialize database:
+### Configure nodes
 
-``` bash
+```bash
+cp nodes-example.json nodes.json
+nano nodes.json
+```
+
+Edit `nodes.json` with your real node names, table names, column names,
+and ThingSpeak write keys. See section 4 for full configuration reference.
+
+> ⚠️ Table names must not contain dots or special characters. Use underscores
+> instead (e.g. `readings_node_1` not `readings_node.1`).
+
+### Initialize the database
+
+```bash
 python3 init_db.py
 ```
 
-Install systemd services:
+This creates `data/gateway.db` with the tables defined in `nodes.json`.
 
-``` bash
-sudo cp services/*.service /etc/systemd/system/
-sudo systemctl daemon-reload
-sudo systemctl enable ts_receiver
-sudo systemctl enable ts_uploader
-sudo systemctl start ts_receiver
-sudo systemctl start ts_uploader
+---
+
+## 9.3 Enable Serial Port
+
+The receiver reads sensor data from the serial port. Enable it with:
+
+```bash
+sudo raspi-config
 ```
 
+Navigate to `Interface Options → Serial Port`:
+- **"Login shell over serial?"** → No
+- **"Serial port hardware enabled?"** → Yes
+
+Reboot when prompted.
+
+---
+
+## 9.4 Create systemd Service Files
+
+The service files are not included in the repository because they contain
+absolute paths and username that vary per machine. Create them manually
+as follows.
+
+Replace `YOUR_USER` with your Linux username and `YOUR_PATH` with the
+absolute path to the `ts_gateway` folder (e.g. `/home/pi/ts_gateway`).
+
+### ts_receiver.service
+
+```bash
+sudo nano /etc/systemd/system/ts_receiver.service
+```
+
+```ini
+[Unit]
+Description=TS Gateway - Receiver (LoRa Serial)
+After=network.target
+
+[Service]
+Type=simple
+User=YOUR_USER
+WorkingDirectory=YOUR_PATH
+ExecStart=YOUR_PATH/venv/bin/python3 receiver.py --mode serial --serial-port /dev/serial0 --baud 9600
+Restart=on-failure
+RestartSec=10
+StandardOutput=append:YOUR_PATH/logs/receiver_service.log
+StandardError=append:YOUR_PATH/logs/receiver_service.log
+
+[Install]
+WantedBy=multi-user.target
+```
+
+### ts_uploader.service
+
+```bash
+sudo nano /etc/systemd/system/ts_uploader.service
+```
+
+```ini
+[Unit]
+Description=TS Gateway - Uploader (SQLite -> ThingSpeak)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=YOUR_USER
+WorkingDirectory=YOUR_PATH
+ExecStart=YOUR_PATH/venv/bin/python3 uploader.py
+Restart=on-failure
+RestartSec=10
+StandardOutput=append:YOUR_PATH/logs/uploader_service.log
+StandardError=append:YOUR_PATH/logs/uploader_service.log
+
+[Install]
+WantedBy=multi-user.target
+```
+
+### Enable and start services
+
+```bash
+mkdir -p YOUR_PATH/logs
+sudo systemctl daemon-reload
+sudo systemctl enable ts_receiver ts_uploader
+sudo systemctl start ts_receiver ts_uploader
+```
+
+Verify both services are running:
+
+```bash
+sudo systemctl status ts_receiver
+sudo systemctl status ts_uploader
+```
+
+
 ------------------------------------------------------------------------
+
+
 
 # 10. Data Flow Summary
 
